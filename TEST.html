@@ -1,0 +1,377 @@
+  <!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+      html { height: 100% }
+      
+	  body { height: 100%; margin: 0; padding: 0 }
+      
+	  #map-canvas { height: 100% }
+	   
+	   #panel {
+        position: absolute;
+        top: 5px;
+        left: 50%;
+        margin-left: -180px;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+      }
+	  
+	  .controls {
+        margin-top: 16px;
+        border: 1px solid transparent;
+        border-radius: 2px 0 0 2px;
+        box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        height: 32px;
+        outline: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+    </style>
+	
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdhzVSJ3hGVYbz9pLS7vLsNro1iB-MFMU&sensor=false">
+    </script>
+    
+	
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=places&sensor=false"></script>
+  	
+    <script type="text/javascript">
+	
+	var LatLng;
+	var markers = [];
+	var otherMarkers = [];
+	var counter;
+	var polygon;
+	var flag;
+	var markerFlag;
+	
+	var map;
+	var service;
+	var infowindow;
+	var myLatlng;
+	var image;
+	
+	var listener;
+		
+	  function initialize() 
+	  {
+		
+		  LatLng = new Array();
+		  
+		  counter = new Number();
+		  counter = 0;
+		  
+		  flag = false;
+		  markerFlag = false;
+		  
+		  myLatlng = new google.maps.LatLng(12.915679, 77.615254);
+		  
+		  
+		  var mapOptions = {
+			zoom: 15,
+			center: myLatlng,
+			disableDoubleClickZoom: true,
+			mapTypeId: google.maps.MapTypeId.TERRAIN  
+		  }
+		  
+		  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+		  
+		  
+		
+		}
+
+		
+		function drawPolygon(){
+			
+			if(counter > 2)
+			{
+				polygon.setMap(null);	
+				////alert("cleaned");
+			}
+			
+			
+			
+			polygon = new google.maps.Polygon({
+				paths: LatLng,
+				strokeColor: '#FF0000',
+				strokeOpacity: 0.8,
+				strokeWeight: 2,
+				fillColor: '#FF0000',
+				fillOpacity: 0.35
+			});
+			
+			polygon.setMap(map);
+			
+			//calculateArea();
+		}
+		
+		function clearAll()
+		{
+			for (var i=0; i < markers.length; i++) {
+				markers[i].setMap(null);
+			}
+			markers = [];
+			LatLng = new Array();
+			counter = 0;
+			polygon.setMap(null);
+			drawPolygon();
+		}
+		
+		function removeLast()
+		{
+			markers[markers.length-1].setMap(null);
+			markers.pop();
+			LatLng.pop();
+			polygon.setMap(null);	
+			
+			polygon = new google.maps.Polygon({
+				paths: LatLng,
+				strokeColor: '#FF0000',
+				strokeOpacity: 0.8,
+				strokeWeight: 2,
+				fillColor: '#FF0000',
+				fillOpacity: 0.35
+			});
+			
+			polygon.setMap(map);
+			////alert("should come "+LatLng.length);
+			
+		}
+		
+		var floatingMarker;
+		
+		function addFloatingMarkerOnLatLng()
+		{
+
+			  floatingMarker = new google.maps.Marker({
+			  position: map.getCenter(),
+			  draggable : true,
+			  icon: 'http://www.symprojects.com/wp-content/uploads/SimScreenEditor_14676/runner_small.gif',
+			  title: counter.toString()
+		  });
+		  
+		  
+		  //floatingMarker.setAnimation(google.maps.Animation.BOUNCE);
+		  
+		  floatingMarker.setMap(map);
+		  
+			flag = true;
+			markerFlag = true;
+
+
+		}
+		
+		function addMarkerOnLatLng(markerLatlng, LatLng) 
+		{
+			var marker = new google.maps.Marker({
+			  position: markerLatlng,// map.getCenter(),
+			  draggable : false,//true,
+//			  icon: 'http://www.symprojects.com/wp-content/uploads/SimScreenEditor_14676/runner_small.gif',
+			  title: counter.toString()
+		  });
+		  
+		  
+		  markers.push(marker);
+		  getMarkerNo(markers.length);
+		  marker.setMap(map);
+		  
+		  LatLng.push(markerLatlng);
+				
+		  
+		  floatingMarker.setMap(null);
+		  
+		  //alert("added"+LatLng.length);
+		  
+			if(counter > 1)
+			{
+				drawPolygon();	
+			}
+			
+			
+			counter++;
+			
+		
+			if(markerFlag == true)
+			{
+				 map.setOptions({draggable: true, scrollwheel: true, disableDoubleClickZoom: true});
+				 google.maps.event.removeListener(listener);
+				 flag = false;	
+				markerFlag = false;	
+				
+				if(counter > 2)
+				{
+					//calculateArea();					
+				}
+			}	
+		
+		}
+		
+		
+
+		google.maps.event.addDomListener(window, 'load', initialize);
+		
+		var xCenter = 0;
+		var yCenter = 0;
+		
+		function getXcenter()
+		{
+			xCenter = as3getX();	
+		}
+		
+		function getYcenter()
+		{
+			yCenter = as3getY();	
+		}
+		
+		function setCenter()
+		{
+			xCenter = as3getX();
+			yCenter = as3getY();
+			
+			var proj = map.getProjection();
+		//	map.setCenter(proj.fromPointToLatLng(new google.maps.Point(xCenter, yCenter)));
+			////alert("done center  "+proj.fromPointToLatLng(new google.maps.Point(xCenter, yCenter)));
+		}
+		
+		
+		function zoomIn()
+		{
+			if(flag == false)
+			{
+				setCenter();
+				
+				if(map.zoom != 18)
+				{
+					var scale = map.zoom + 1;
+					map.setZoom(scale);	
+				}
+			}
+		}
+		
+		function zoomOut()
+		{
+			if(flag == false)
+			{
+				setCenter();
+				
+				if(map.zoom != 0)
+				{
+					var scale = map.zoom - 1;
+					map.setZoom(scale);		
+				}
+			}
+		}
+		
+		
+		function calculateArea() {
+			//alert("called Calculatr "+polygon.length);
+			var z = google.maps.geometry.spherical.computeArea(polygon.getPath());
+			alert((z/1000000)+"  sq k.meter");
+			
+			setCenter();
+		}
+		
+		
+		function getAreaCalledfromHTML()
+		{
+			//alert("called Calculatr "+polygon.length);
+			var z = google.maps.geometry.spherical.computeArea(polygon.getPath());
+			
+			getArea(z);
+			setCenter();			
+		}
+		
+		
+		
+		function addMarkerBool()
+		{
+			if(markerFlag == false)
+			{
+				map.setOptions({draggable: false, scrollwheel: false, disableDoubleClickZoom: true});
+		  
+					//addMarkerOnLatLng(markerLatlng, LatLng);
+					addFloatingMarkerOnLatLng();
+					
+			}
+		}
+		
+		function _cancel()
+		{
+			if(markerFlag == true)
+			{
+				 map.setOptions({draggable: true, scrollwheel: true, disableDoubleClickZoom: true});
+				 google.maps.event.removeListener(listener);
+				 flag = false;	
+				markerFlag = false;	
+			}			
+		}
+		
+		
+		function lock()
+		{
+			//alert("level 1");
+			if(markerFlag == true)
+			{
+				//alert("level 2"+floatingMarker.position);
+				addMarkerOnLatLng(floatingMarker.position, LatLng);
+				flag = false;	
+				markerFlag = false;	
+			}			
+		}
+		
+    </script>
+  </head>
+  <body>
+  		<!--
+		<input id="pac-input" class="controls" type="text"
+        placeholder="Enter a location - Pokemon - Catch'em all">  
+  		
+        <input type="checkbox" id="putMarkerBool" name="xxx" onclick="markerModeForDirection();"/>
+        <label >Marker Mode</label>
+        
+        
+        <button onClick="searchParse()" >atm</button>   
+        <button onClick="showPlaces('atm')" >atm</button>
+        <button onClick="showPlaces('hospital')" >Hospital</button>
+        <button onClick="showPlaces('store')" >Store</button>                
+        <button onClick="showPlaces('restaurant')" >Restaurant</button>
+        <button onClick="showPlaces('')" >Clear markers</button>		                                
+
+	<button onclick="calculateArea()" style="left:100px">Try it</button>
+    
+    
+    <div id="panel">
+    <b>Start: </b>
+    <select id="start" onchange="calcRoute();">
+      <option value="silkboard, bangalroe" selected>Silkboard</option>
+      <option value="marathahalli, bangalore">Marathahalli</option>
+      <option value="majestic, bangalore">Majestic</option>
+      <option value="yeshwantpura, bangalore">Yeshwantpura</option>
+      <option value="28th main, 3rd cross, btm, 2nd stage, bangalore">Home</option>
+    </select>
+    <b>End: </b>
+    <select id="end" onchange="calcRoute();">
+      <option value="silkboard, bangalroe">Silkboard</option>
+      <option value="marathahalli, bangalore">Ma rathahalli</option>
+      <option value="majestic, bangalore">Majestic</option>
+      <option value="yeshwantpura, bangalore">Yeshwantpura</option>
+    </select>
+    </div>
+    
+    
+	    <button onClick="addMarkerBool()" >addMarkerBool</button>                
+        <button onClick="cancel()" >cancel</button>
+	    <button onClick="clearAll()" >clearAll</button>                
+        <button onClick="removeLast()" >removeLast</button>        
+-->
+    	<button onclick="calculateArea()" style="left:100px">Try it</button>
+        <div id="map-canvas" style="background-color:#FFFFFF;"> </div>
+
+        
+  </body>
+</html>
